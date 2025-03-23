@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<!-- DATA VISUALISATION PAGE-->
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Data Visualisation</title>
+
+	<!-- Load Sweet alert 2 -> for the pop ups when changing status  -->
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+	<style>
+		h2 {
+			text-align: center;
+			margin-bottom: 20px;
+			font-size: 50px;
+		}
+
+
+		body {
+			margin-top: 80px;
+		}
+
+		/* TABLE */
+
+		.vis-Table {
+			width: 90%;
+			margin: 20px auto;
+			border-collapse: collapse;
+		}
+
+		.vis-Table th,
+		.vis-Table td {
+			border: 1px solid #ddd;
+			padding: 8px;
+			text-align: left;
+		}
+
+		.vis-Table th {
+			background-color: #f4f4f4;
+			font-weight: bold;
+		}
+
+		/* FILTERS */
+
+		/* nameSearch SEARCHBAR */
+		.nameSearch {
+			/* Make it to the left */
+			text-align: left;
+		}
+
+
+		/* Container of all filter things */
+		.filter-container {
+			/* Make it a flexbox */
+			display: flex;
+			/* Make space between */
+			justify-content: space-between;
+			/* Align via center */
+			align-items: center;
+			/* Positioning */
+			width: 90%;
+			margin: 20px auto;
+			/* /* Makes sure everything is positioned relative  */
+			position: relative;
+		}
+
+		/* Searchbar measurements */
+		.filter-container input {
+			padding: 8px;
+			font-size: 16px;
+			width: 200px;
+		}
+
+
+		/* Right side - Name and status */
+		.rightSide {
+			/* Make it a flexbox */
+			display: flex;
+			/* make them center aligned*/
+			align-items: center;
+			/* gap between them */
+			gap: 10px;
+		}
+
+		/* Format for the filter options */
+		.filter-options {
+			/* Make them flexbox */
+			display: flex;
+			/* Make them wrap */
+			flex-wrap: wrap;
+			/* Gap between them */
+			gap: 10px;
+			/* Cetntre align */
+			align-items: center;
+		}
+
+		/* Input options */
+		.filter-container input,
+		.filter-container select {
+			/* Formatting */
+			padding: 8px;
+			margin: 10px;
+			font-size: 14px;
+		}
+
+
+		/* Labels - make them stay together */
+		.filter-options label {
+			/* Flexy */
+			display: inline-flex;
+			align-items: center;
+			/* Small gap */
+			gap: 5px;
+			/* Prevent wrapping */
+			white-space: nowrap;
+		}
+	</style>
+</head>
+
+<body>
+
+
+	<h2>Data Visualisation: Sweets and soft drinks consumed at a student hackathon</h2>
+
+	<div class="filter-container">
+
+
+		<!-- Right side -->
+		<div class="rightSide">
+
+			<!-- NAME SEARCHBAR -->
+			<div class="nameSearch filter-options">
+				<input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Search by Name...">
+			</div>
+
+			<!-- Type filter -->
+			<div class="filter-options">
+				<label for="typeFilter">Type:</label>
+				<select id="typeFilter" onchange="filterTable()">
+					<option value="all">All</option>
+					<option value="Drink">Drink</option>
+					<option value="sweets">Sweets</option>
+				</select>
+			</div>
+
+			<!-- Type filter -->
+			<div class="filter-options">
+				<!-- Sort by Quantity Button -->
+				<button onclick="sortByQuantity()">Sort by Quantity</button>
+
+			</div>
+
+
+		</div>
+
+
+	</div>
+
+	<!-- Visualisation Table -->
+	<table class="vis-Table" id="visTable">
+		<thead>
+			<tr>
+				<th>Type</th>
+				<th>Name</th>
+				<th>Quantity</th>
+				<th>Units</th>
+				<th>Edit</th>
+			</tr>
+		</thead>
+		<tbody>
+
+		</tbody>
+	</table>
+
+
+	<script>
+
+		// Function to fetch initial data from php and insert into table
+		function loadData() {
+			// Call PHP 
+			fetch('visualising.php')
+				// Convert response to JSON
+				.then(response => response.json())
+				// With the JSON response
+				.then(data => {
+					// Get the table
+					var tableBody = document.getElementById("visTable").getElementsByTagName("tbody")[0];
+
+					// Clear existing table rows before adding new ones
+					tableBody.innerHTML = "";
+
+					// For every column in the data we recieved from the php
+					data.forEach(order => {
+						// Create a new row
+						var newRow = tableBody.insertRow();
+
+						// Insert the row info
+						newRow.insertCell(0).innerHTML = order.Type;
+						newRow.insertCell(1).innerHTML = order.Name;
+						newRow.insertCell(2).innerHTML = order.Quantity;
+						newRow.insertCell(3).innerHTML = order.Units;
+
+						// Create a new cell
+						var actionCell = newRow.insertCell(4);
+						// Create the button
+						var btn = document.createElement("button");
+						// Make the button say edit quantity
+						btn.textContent = "Edit Quantity";
+						// Add a class to this button for styling 
+						btn.classList.add("quantityButton");
+						// When we click it, open a pop up with the name and quantity arguments
+						btn.onclick = () => openQuantityPopup(order.Name, order.Quantity);
+						// Append button to the action cell
+						actionCell.appendChild(btn);
+					});
+				})
+				// Catch errors
+				.catch(error => console.error('Error fetching data:', error));
+		}
+
+		// Call function when the page loads
+		window.onload = loadData;
+
+		// Function to open the popup for the quantity
+		function openQuantityPopup(name, quantity) {
+			// Check if Swal (sweet alert 2) has been loaded
+			if (typeof Swal === "undefined") {
+				console.error("SweetAlert2 is not loaded.");
+				return;
+			}
+
+			// Create and display custom alert box
+			Swal.fire({
+				// Title
+				title: "Change Order Quantity",
+				// Ask for a number 
+				input: "number",
+				// Default value
+				inputValue: quantity,
+				// Validation to make sure the number is positive
+				inputAttributes: {
+					min: 1,
+					step: 1
+				},
+				// Cancel button
+				showCancelButton: true,
+				// Confirm button says update
+				confirmButtonText: "Update",
+				// After confirming or cancelling
+			}).then((result) => {
+				// If confirmed, call updateQuantity with the new value
+				if (result.isConfirmed) {
+					// Check if the entered value is valid before updating
+					const newQuantity = parseInt(result.value);
+					if (!isNaN(newQuantity) && newQuantity > 0) {
+						updateQuantity(name, newQuantity);
+						// IF invalid, scold the user
+					} else {
+						Swal.fire("Invalid Quantity", "Please enter a valid number.", "error");
+					}
+				}
+			});
+		}
+
+		// Funciton to updatye quantity with those arguments
+		function updateQuantity(name, newQuantity) {
+			// Fetch the update status php page
+			fetch('updateQuantity.php', {
+				// Use post method to send data
+				method: 'POST',
+				// SEND AS JSON
+				headers: { 'Content-Type': 'application/json' },
+				// The data being sent - name and newQuantity as JSON
+				body: JSON.stringify({ name: name, newQuantity: newQuantity })
+			})
+				// processes response from the fetch request - converts to json
+				.then(response => response.json())
+				// Then
+				.then((data) => {
+					// If the update was successful
+					if (data.status === 'success') {
+						// displays a popup with sweetalert2
+						Swal.fire("Success", "Quantity updated!", "success");
+						// Reload data to reflect changes
+						loadData();
+
+					} else {
+						// Show error if update fails
+						Swal.fire("Error", data.message, "error");
+					}
+				})
+				// Error handling
+				.catch(error => console.error('Error updating status:', error));
+		}
+
+		// Function to filter the table based on search input
+		// Filter table rows based on input (search?)
+		function filterTable() {
+
+			// Get table
+			var table = document.getElementById("visTable");
+			// Get all rows
+			var tr = table.getElementsByTagName("tr");
+
+			// Get the inputs
+
+			// Quantity filter input and turn to lowercase
+			var typeFilter = document.getElementById("typeFilter").value.toLowerCase();
+
+			// nameFilter filter input and turn to lowercase
+			var nameFilter = document.getElementById("nameFilter").value.toLowerCase();
+
+
+			// Loop through all table rows (but not the header)
+			for (var i = 1; i < tr.length; i++) {
+				// Get the table cell element for that row
+				var tdType = tr[i].getElementsByTagName("td")[0];
+				var tdName = tr[i].getElementsByTagName("td")[1];
+				var tdQuantity = tr[i].getElementsByTagName("td")[3];
+				var tdUnits = tr[i].getElementsByTagName("td")[4];
+
+				// Filtering this row
+				// Check if the type matches if it was searched for - and also checks for all
+				var matchesType = typeFilter === "all" || tdType.textContent.toLowerCase().includes(typeFilter);
+
+				// Check if the Name matches if it was searched for
+				var matchesName = tdName.textContent.toLowerCase().includes(nameFilter);
+
+
+				// End checks
+				// If it goes through all the filters
+				if (matchesType && matchesName) {
+					// Show the row
+					tr[i].style.display = "";
+					// Otherwise hide the row
+				} else {
+					tr[i].style.display = "none";
+				}
+
+
+			}
+		}
+
+		// Function to add a new transaction to the table
+		function addTransaction(type, name, quantity, units) {
+			// Get table body
+			var tableBody = document.getElementById("visTable").getElementsByTagName("tbody")[0];
+			// Insert a new row
+			var newRow = tableBody.insertRow();
+
+			// Insert each data into respective columns
+			newRow.insertCell(0).innerHTML = type;
+			newRow.insertCell(1).innerHTML = name;
+			newRow.insertCell(2).innerHTML = quantity;
+			newRow.insertCell(3).innerHTML = units;
+		}
+
+		// Function to sort the table by quantity -ASCENDING ORDER ONLY
+		function sortByQuantity() {
+			// Get the table and rows
+			var table = document.getElementById("visTable");
+			var tbody = table.getElementsByTagName("tbody")[0];
+			var rows = Array.from(tbody.getElementsByTagName("tr"));
+
+			// Sort rows by quantity column
+			rows.sort((rowA, rowB) => {
+				// Get first 
+				var quantityA = parseInt(rowA.cells[2].textContent); 
+				// Get second
+				var quantityB = parseInt(rowB.cells[2].textContent);
+				// Minus it and see the result
+				return quantityA - quantityB; 
+			});
+
+			// Clear the table 
+			tbody.innerHTML = "";
+			// Reinsert sorted rows
+			rows.forEach(row => tbody.appendChild(row));
+		}
+
+	</script>
+
+</body>
+
+</html>
