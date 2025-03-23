@@ -1,3 +1,4 @@
+![image](https://github.com/user-attachments/assets/d78c9321-5703-4614-9d50-5c5d77b16774)
 # dataVisualisation
 Website to visualise data
 
